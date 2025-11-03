@@ -20,34 +20,33 @@ def game(mode):
 	if mode == 3:	# options for custom gameplay settings
 		global tickrate_option, chance_option, duration_option, drop_option, border_option	
 
-		match tickrate_option:
-			case 1:
-				Special.changetickrate(2)
-			case 2:
-				pass	# default option
-			case 3:
-				Special.changetickrate(7)
-		match chance_option:
-			case 1:
-				Special.changechance(2)
-			case 2:
-				pass	# default option
-			case 3:
-				Special.changechance(25)
-		match duration_option:
-			case 1:
-				Special.changelast(25)
-			case 2:
-				pass	# default option
-			case 3:
-				Special.changelast(55)
+		if tickrate_option == 1:
+			Special.changetickrate(2)
+		elif tickrate_option == 3:
+			Special.changetickrate(7)
+		if chance_option == 1:
+			Special.changechance(2)
+		elif chance_option == 3:
+			Special.changechance(25)
+		if duration_option == 1:
+			Special.changelast(25)
+		elif duration_option == 3:
+			Special.changelast(55)
 
 	player = Snake(c.START_U)
+	player.snake[-1][2] = player.get() or 'u'
 	food = Food(player)
-	
-	while player.running(border_option):
+	move_accumulator = 0.0
+	running = True
+
+	while running:
+		delta = clock.tick(60)
+		move_accumulator += delta
+		step_ms = 1000.0 / max(Special.TICKRATE, 1)
+
 		for event in pygame.event.get():
-			if event.type==pygame.QUIT:
+			if event.type == pygame.QUIT:
+				running = False
 				pygame.quit()
 				exit()
 			if event.type == pygame.KEYDOWN:
@@ -66,30 +65,41 @@ def game(mode):
 				elif event.key == pygame.K_SPACE:
 					break	
 
-		player.update()	
-		food.update()
-					
-		if border_option:	# teleport implementation needs to be between update and draw
-			if player.getx() <= 0 or player.getx() >= WIDTH or player.gety() <= 0 or player.gety() >= HEIGHT:
-				if player.getx() <= 0:
-					player.setx(WIDTH-20)
-				elif player.getx() >= WIDTH:
-					player.setx(20)
-				elif player.gety() <= 0:
-					player.sety(HEIGHT-20)
-				elif player.gety() >= HEIGHT:
-					player.sety(20)
+		advanced = False
+		while move_accumulator >= step_ms:
+			move_accumulator -= step_ms
+			player.update()
+			if border_option:	# teleport implementation needs to be between update and draw
+				if player.getx() <= 0 or player.getx() >= WIDTH or player.gety() <= 0 or player.gety() >= HEIGHT:
+					if player.getx() <= 0:
+						player.setx(WIDTH-20)
+					elif player.getx() >= WIDTH:
+						player.setx(20)
+					elif player.gety() <= 0:
+						player.sety(HEIGHT-20)
+					elif player.gety() >= HEIGHT:
+						player.sety(20)
+			if not player.running(border_option):
+				running = False
+				break
+			food.update()
+			if mode == 2 or (mode == 3 and drop_option):
+				if Special.run(player, advance=True, render=False) == False:
+					running = False
+					break
+			advanced = True
+		if not running:
+			break
 
 		display.fill(ON)
 		pygame.draw.rect(display,OFF,[10,10,WIDTH-20,HEIGHT-20])
 
 		player.draw()
-		food.draw()		
+		food.draw()
 		if mode == 2 or (mode == 3 and drop_option):
-			if Special.run(player) == False: break	# when pickups mode or selected in custom, this function handles special pickups
-		
+			Special.run(player, advance=False, render=True)	# draw existing power-ups and extra food
+
 		pygame.display.update()
-		clock.tick(Special.TICKRATE)
 
 def splash(): # splash screen
 	running = True
@@ -113,7 +123,7 @@ def splash(): # splash screen
 	
 		pygame.draw.rect(display,OFF,[10,10,WIDTH-20,HEIGHT-20])				
 
-		logo = pygame.image.load(os.path.abspath('Assets\\GUI\\logo.png'))
+		logo = pygame.image.load(c.asset_path('GUI', 'logo.png'))
 		display.blit(logo,(70,130))
 
 		Desciption = Text("Press RETURN to start", 320, 350, font3)
@@ -143,14 +153,13 @@ def menu():	# main menu
 					select()
 			if event.type == pygame.MOUSEBUTTONDOWN:
 				if event.button == 1:
-					pygame.mixer.music.load(os.path.abspath('Assets\\Sounds\\click.wav'))
-					pygame.mixer.music.play(1)
+					c.SOUND_CLICK.play()
 					click = True
 			
 		display.fill(ON)
 		pygame.draw.rect(display,OFF,[10,10,WIDTH-20,HEIGHT-20])
 
-		logo = pygame.image.load(os.path.abspath('Assets\\GUI\\logo.png'))
+		logo = pygame.image.load(c.asset_path('GUI', 'logo.png'))
 		display.blit(logo,(70,60))
 
 		mx, my = pygame.mouse.get_pos()
@@ -196,8 +205,7 @@ def select():	# gamemode choice
 					running = False
 			if event.type == pygame.MOUSEBUTTONDOWN:
 				if event.button == 1:
-					pygame.mixer.music.load(os.path.abspath('Assets\\Sounds\\click.wav'))
-					pygame.mixer.music.play(1)
+					c.SOUND_CLICK.play()
 					click = True
 			
 		display.fill(ON)
@@ -296,8 +304,7 @@ def custom():	# This is really dirty and i prolly will revise this in the future
 					running = False
 			if event.type == pygame.MOUSEBUTTONDOWN:
 				if event.button == 1:
-					pygame.mixer.music.load(os.path.abspath('Assets\\Sounds\\click.wav'))
-					pygame.mixer.music.play(1)
+					c.SOUND_CLICK.play()
 					click = True
 			
 		display.fill(ON)
@@ -354,19 +361,18 @@ def custom():	# This is really dirty and i prolly will revise this in the future
 		if tickrate.collidepoint(mx,my):
 			Desc.draw(display, ON)
 
-		match tickrate_option:
-			case 1:
-				tickrate1.draw(display, "checked")
-				tickrate2.draw(display)
-				tickrate3.draw(display)
-			case 2:
-				tickrate1.draw(display)
-				tickrate2.draw(display, "checked")
-				tickrate3.draw(display)
-			case 3:
-				tickrate1.draw(display)
-				tickrate2.draw(display)
-				tickrate3.draw(display, "checked")
+		if tickrate_option == 1:
+			tickrate1.draw(display, "checked")
+			tickrate2.draw(display)
+			tickrate3.draw(display)
+		elif tickrate_option == 2:
+			tickrate1.draw(display)
+			tickrate2.draw(display, "checked")
+			tickrate3.draw(display)
+		else:
+			tickrate1.draw(display)
+			tickrate2.draw(display)
+			tickrate3.draw(display, "checked")
 			
 		if tickrate1.collidepoint(mx,my):
 			Desc.draw(display, ON)
@@ -395,19 +401,18 @@ def custom():	# This is really dirty and i prolly will revise this in the future
 			if chance.collidepoint(mx,my):
 				Desc.draw(display, ON)
 
-			match chance_option:
-				case 1:
-					chance1.draw(display, "checked")
-					chance2.draw(display)
-					chance3.draw(display)
-				case 2:
-					chance1.draw(display)
-					chance2.draw(display, "checked")
-					chance3.draw(display)
-				case 3:
-					chance1.draw(display)
-					chance2.draw(display)
-					chance3.draw(display, "checked")
+			if chance_option == 1:
+				chance1.draw(display, "checked")
+				chance2.draw(display)
+				chance3.draw(display)
+			elif chance_option == 2:
+				chance1.draw(display)
+				chance2.draw(display, "checked")
+				chance3.draw(display)
+			else:
+				chance1.draw(display)
+				chance2.draw(display)
+				chance3.draw(display, "checked")
 				
 			if chance1.collidepoint(mx,my):
 				Desc.draw(display, ON)
@@ -433,19 +438,18 @@ def custom():	# This is really dirty and i prolly will revise this in the future
 			if duration.collidepoint(mx,my):
 				Desc.draw(display, ON)
 
-			match duration_option:
-				case 1:
-					duration1.draw(display, "checked")
-					duration2.draw(display)
-					duration3.draw(display)
-				case 2:
-					duration1.draw(display)
-					duration2.draw(display, "checked")
-					duration3.draw(display)
-				case 3:
-					duration1.draw(display)
-					duration2.draw(display)
-					duration3.draw(display, "checked")
+			if duration_option == 1:
+				duration1.draw(display, "checked")
+				duration2.draw(display)
+				duration3.draw(display)
+			elif duration_option == 2:
+				duration1.draw(display)
+				duration2.draw(display, "checked")
+				duration3.draw(display)
+			else:
+				duration1.draw(display)
+				duration2.draw(display)
+				duration3.draw(display, "checked")
 				
 			if duration1.collidepoint(mx,my):
 				Desc.draw(display, ON)

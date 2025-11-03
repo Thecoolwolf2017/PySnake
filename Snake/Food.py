@@ -25,8 +25,7 @@ class Food(pygame.sprite.Sprite):
 
 	def update(self):
 		if self.player.getx() == self.xfood and self.player.gety() == self.yfood:
-			pygame.mixer.music.load(os.path.abspath('Assets\\Sounds\\eat.wav'))
-			pygame.mixer.music.play(1)
+			c.SOUND_EAT.play()
 			self.player.point()
 			self.genfood()
 

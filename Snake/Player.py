@@ -11,7 +11,7 @@ class Snake(pygame.sprite.Sprite):
 		self.y = int(HEIGHT/2)
 		self.xmove = 0
 		self.ymove = 0
-		self.snake = []		# initializing snake body
+		self.snake = [[self.x, self.y, '']]		# initialize snake body with starting segment
 		self.points = 1
 
 	def point(self, value=1):
@@ -30,87 +30,77 @@ class Snake(pygame.sprite.Sprite):
 				return 'd'	# down 
 
 	def draw(self):
-		snake_head = [self.x,self.y,self.get()]	# x, y, direction
-		self.snake.append(snake_head)
-
-		if len(self.snake) > 1:					# change direction of second segment too
-			self.snake[-2][2] = self.get()
-
-		if len(self.snake) > self.points:		# remove the last segment
-			del self.snake[0]
-
-		for segment in enumerate(self.snake):	# animation
+		for index, segment in enumerate(self.snake):	# animation
+			x, y, direction = segment
 			if self.points == 1:
-				match segment[1][2]:
-						case 'u':
-							display.blit(c.START_U, (segment[1][0]-10,segment[1][1]-10))
-						case 'r':
-							display.blit(c.START_R, (segment[1][0]-10,segment[1][1]-10))
-						case 'd':
-							display.blit(c.START_D, (segment[1][0]-10,segment[1][1]-10))
-						case 'l':
-							display.blit(c.START_L, (segment[1][0]-10,segment[1][1]-10))
-						case _: 	# starting position
-							display.blit(c.START_U, (segment[1][0]-10,segment[1][1]-10))
+				if direction == 'u':
+					display.blit(c.START_U, (x-10,y-10))
+				elif direction == 'r':
+					display.blit(c.START_R, (x-10,y-10))
+				elif direction == 'd':
+					display.blit(c.START_D, (x-10,y-10))
+				elif direction == 'l':
+					display.blit(c.START_L, (x-10,y-10))
+				else: 	# starting position
+					display.blit(c.START_U, (x-10,y-10))
 			else:
-				if segment[0] == len(self.snake)-1:		# head direction
-					match segment[1][2]:
-						case 'u':
-							display.blit(c.HEAD_U, (segment[1][0]-10,segment[1][1]-10))
-						case 'r':
-							display.blit(c.HEAD_R, (segment[1][0]-10,segment[1][1]-10))
-						case 'd':
-							display.blit(c.HEAD_D, (segment[1][0]-10,segment[1][1]-10))
-						case 'l':
-							display.blit(c.HEAD_L, (segment[1][0]-10,segment[1][1]-10))
-				elif segment[0] == 0:
-					match segment[1][2]:				# tail direction
-						case 'u':
-							display.blit(c.TAIL_D, (segment[1][0]-10,segment[1][1]-10))
-						case 'r':
-							display.blit(c.TAIL_L, (segment[1][0]-10,segment[1][1]-10))
-						case 'd':
-							display.blit(c.TAIL_U, (segment[1][0]-10,segment[1][1]-10))
-						case 'l':
-							display.blit(c.TAIL_R, (segment[1][0]-10,segment[1][1]-10))
+				if index == len(self.snake)-1:		# head direction
+					if direction == 'u':
+						display.blit(c.HEAD_U, (x-10,y-10))
+					elif direction == 'r':
+						display.blit(c.HEAD_R, (x-10,y-10))
+					elif direction == 'd':
+						display.blit(c.HEAD_D, (x-10,y-10))
+					elif direction == 'l':
+						display.blit(c.HEAD_L, (x-10,y-10))
+				elif index == 0:
+					if direction == 'u':
+						display.blit(c.TAIL_D, (x-10,y-10))
+					elif direction == 'r':
+						display.blit(c.TAIL_L, (x-10,y-10))
+					elif direction == 'd':
+						display.blit(c.TAIL_U, (x-10,y-10))
+					elif direction == 'l':
+						display.blit(c.TAIL_R, (x-10,y-10))
 				else:									# turn direction and position
-					if self.points > 2 and segment[1][2] != self.snake[segment[0]-1][2]:
-						if		segment[1][2] == 'd' and self.snake[segment[0]-1][2] == 'l' or segment[1][2] == 'r' and self.snake[segment[0]-1][2] == 'u':
-							display.blit(c.SEGMENT_DR, (segment[1][0]-10,segment[1][1]-10))
-						elif 	segment[1][2] == 'u' and self.snake[segment[0]-1][2] == 'l' or segment[1][2] == 'r' and self.snake[segment[0]-1][2] == 'd':
-							display.blit(c.SEGMENT_UR, (segment[1][0]-10,segment[1][1]-10))
-						elif	segment[1][2] == 'd' and self.snake[segment[0]-1][2] == 'r' or segment[1][2] == 'l' and self.snake[segment[0]-1][2] == 'u':
-							display.blit(c.SEGMENT_DL, (segment[1][0]-10,segment[1][1]-10))
-						elif 	segment[1][2] == 'u' and self.snake[segment[0]-1][2] == 'r' or segment[1][2] == 'l' and self.snake[segment[0]-1][2] == 'd':
-							display.blit(c.SEGMENT_UL, (segment[1][0]-10,segment[1][1]-10))
+					prev_direction = self.snake[index-1][2]
+					if self.points > 2 and direction != prev_direction:
+						if		direction == 'd' and prev_direction == 'l' or direction == 'r' and prev_direction == 'u':
+							display.blit(c.SEGMENT_DR, (x-10,y-10))
+						elif 	direction == 'u' and prev_direction == 'l' or direction == 'r' and prev_direction == 'd':
+							display.blit(c.SEGMENT_UR, (x-10,y-10))
+						elif	direction == 'd' and prev_direction == 'r' or direction == 'l' and prev_direction == 'u':
+							display.blit(c.SEGMENT_DL, (x-10,y-10))
+						elif 	direction == 'u' and prev_direction == 'r' or direction == 'l' and prev_direction == 'd':
+							display.blit(c.SEGMENT_UL, (x-10,y-10))
 					else:								# continous body direction
-						if segment[1][2] == 'u' or segment[1][2] == 'd':
-							display.blit(c.SEGMENT_V, (segment[1][0]-10,segment[1][1]-10))
+						if direction == 'u' or direction == 'd':
+							display.blit(c.SEGMENT_V, (x-10,y-10))
 						else:
-							display.blit(c.SEGMENT_H, (segment[1][0]-10,segment[1][1]-10))
+							display.blit(c.SEGMENT_H, (x-10,y-10))
 
 	def openwide(self):
-		match self.snake[-1][2]:	# opening the mouth if food will be eaten in the next tick
-			case 'u':
-				if self.points == 1:
-					display.blit(c.START_U_OPEN, (self.snake[-1][0]-10,self.snake[-1][1]-10))
-				else:
-					display.blit(c.HEAD_U_OPEN, (self.snake[-1][0]-10,self.snake[-1][1]-10))
-			case 'r':
-				if self.points == 1:
-					display.blit(c.START_R_OPEN, (self.snake[-1][0]-10,self.snake[-1][1]-10))
-				else:
-					display.blit(c.HEAD_R_OPEN, (self.snake[-1][0]-10,self.snake[-1][1]-10))
-			case 'd':
-				if self.points == 1:
-					display.blit(c.START_D_OPEN, (self.snake[-1][0]-10,self.snake[-1][1]-10))
-				else:
-					display.blit(c.HEAD_D_OPEN, (self.snake[-1][0]-10,self.snake[-1][1]-10))
-			case 'l':
-				if self.points == 1:
-					display.blit(c.START_L_OPEN, (self.snake[-1][0]-10,self.snake[-1][1]-10))
-				else:
-					display.blit(c.HEAD_L_OPEN, (self.snake[-1][0]-10,self.snake[-1][1]-10))
+		direction = self.snake[-1][2]	# opening the mouth if food will be eaten in the next tick
+		if direction == 'u':
+			if self.points == 1:
+				display.blit(c.START_U_OPEN, (self.snake[-1][0]-10,self.snake[-1][1]-10))
+			else:
+				display.blit(c.HEAD_U_OPEN, (self.snake[-1][0]-10,self.snake[-1][1]-10))
+		elif direction == 'r':
+			if self.points == 1:
+				display.blit(c.START_R_OPEN, (self.snake[-1][0]-10,self.snake[-1][1]-10))
+			else:
+				display.blit(c.HEAD_R_OPEN, (self.snake[-1][0]-10,self.snake[-1][1]-10))
+		elif direction == 'd':
+			if self.points == 1:
+				display.blit(c.START_D_OPEN, (self.snake[-1][0]-10,self.snake[-1][1]-10))
+			else:
+				display.blit(c.HEAD_D_OPEN, (self.snake[-1][0]-10,self.snake[-1][1]-10))
+		elif direction == 'l':
+			if self.points == 1:
+				display.blit(c.START_L_OPEN, (self.snake[-1][0]-10,self.snake[-1][1]-10))
+			else:
+				display.blit(c.HEAD_L_OPEN, (self.snake[-1][0]-10,self.snake[-1][1]-10))
 
 	def getx(self):
 		return self.x
@@ -143,6 +133,17 @@ class Snake(pygame.sprite.Sprite):
 	def update(self):
 		self.x += self.xmove
 		self.y += self.ymove
+		direction = self.get()
+		if direction is None and self.snake:
+			direction = self.snake[-1][2] or 'u'
+		elif direction is None:
+			direction = 'u'
+		snake_head = [self.x, self.y, direction]
+		self.snake.append(snake_head)
+		if len(self.snake) > 1:
+			self.snake[-2][2] = direction
+		if len(self.snake) > self.points:
+			del self.snake[0]
 
 	def running(self, setting=False):
 		for segment in self.snake[:-1]:	# checking collision
@@ -156,8 +157,7 @@ class Snake(pygame.sprite.Sprite):
 		return True				# if not oob, and not on snake - continue
 
 	def gameover(self):	# game over prompt displayed over the game
-		pygame.mixer.music.load(os.path.abspath('Assets\\Sounds\\gameover.wav'))
-		pygame.mixer.music.play(1)	
+		c.SOUND_GAMEOVER.play()
 		reload(s)	# reloading specials (resets game speed, removes extra food)
 		running = True
 		while running:
@@ -170,8 +170,7 @@ class Snake(pygame.sprite.Sprite):
 					exit()
 				if event.type == pygame.MOUSEBUTTONDOWN:
 					if event.button == 1:
-						pygame.mixer.music.load(os.path.abspath('Assets\\Sounds\\click.wav'))
-						pygame.mixer.music.play(1)
+						c.SOUND_CLICK.play()
 						click = True
 
 			pygame.draw.rect(display,ON,[WIDTH/2-250,HEIGHT/2-150, 500, 300])
@@ -192,7 +191,7 @@ class Snake(pygame.sprite.Sprite):
 					self.y = int(HEIGHT/2)
 					self.xmove = 0
 					self.ymove = 0
-					self.snake = []
+					self.snake = [[self.x, self.y, 'u']]
 					self.points = 1
 					return True	# continues the game
 			else: play.draw(display)
